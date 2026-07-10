@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { db } from "../../lib/db";
+
 import { Users, FileText, Zap, Clock, TrendingUp, TrendingDown, Eye, Edit2, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from "recharts";
+
+import { LeadDetails } from "./LeadDetails";
 
 const kpiCards = [
   {
@@ -157,6 +160,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
+
+  const [selectedLead, setSelectedLead] = useState<any>(null);
+
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
 
@@ -177,6 +183,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
   }, []);
 
   return (
+
     <div style={{ padding: 32, maxWidth: 1280, margin: "0 auto" }}>
       {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 28 }}>
@@ -376,6 +383,9 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
             </tr>
           </thead>
           <tbody>
+
+                 
+                  
             {loadingLeads ? (
               <tr>
                 <td colSpan={7} style={{ padding: "40px 0", textAlign: "center", color: "#64748B", fontSize: 13 }}>
@@ -423,6 +433,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
                           padding: "3px 10px",
                           fontSize: 12,
                           fontWeight: 600,
+
                         }}
                       >
                         {lead.status}
@@ -542,7 +553,26 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
             </button>
           </div>
         </div>
-      </div>
+            </div>
+
+      {selectedLead && (
+  <LeadDetails
+    lead={selectedLead}
+    onClose={() => setSelectedLead(null)}
+  onSave={(updatedLead) => {
+  setLeads(
+    leads.map((lead) =>
+      lead.id === updatedLead.id ? updatedLead : lead
+    )
+  );
+
+  setSelectedLead(null);
+}}
+    
+  />
+)}
+
     </div>
   );
 }
+  
