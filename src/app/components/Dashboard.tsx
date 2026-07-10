@@ -5,6 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from "recharts";
+import { LeadDetails } from "./LeadDetails";
 
 const kpiCards = [
   {
@@ -157,6 +158,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
+  const [selectedLead, setSelectedLead] = useState<any>(null);
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
 
@@ -434,7 +436,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onNavigate(`leads/${lead.id}`);
+                            setSelectedLead(lead);
                           }}
                           title="View Detail"
                           style={{
@@ -543,6 +545,47 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
           </div>
         </div>
       </div>
+
+      {selectedLead && (
+        <LeadDetails
+          lead={{
+            ...selectedLead,
+            name: selectedLead.customer_name,
+            updated: formatRelativeTime(selectedLead.created_at),
+          }}
+          onClose={() => setSelectedLead(null)}
+          onSave={async (updatedLead) => {
+            try {
+              const dbLeadData = {
+                customer_name: updatedLead.name,
+                location: updatedLead.location,
+                capacity: parseFloat(updatedLead.capacity) || 0,
+                budget: parseFloat(updatedLead.budget) || 0,
+                status: updatedLead.status,
+              };
+
+              await db.saveLead(dbLeadData, updatedLead.id);
+
+              const finalUpdated = {
+                ...updatedLead,
+                customer_name: updatedLead.name,
+                capacity: parseFloat(updatedLead.capacity) || 0,
+                budget: parseFloat(updatedLead.budget) || 0,
+              };
+
+              setRecentLeads(
+                recentLeads.map((lead) =>
+                  lead.id === finalUpdated.id ? { ...lead, ...finalUpdated } : lead
+                )
+              );
+            } catch (err) {
+              console.error("Error saving lead:", err);
+            } finally {
+              setSelectedLead(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
