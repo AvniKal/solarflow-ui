@@ -4,9 +4,11 @@ import { useState } from "react";
 interface TopBarProps {
   title: string;
   subtitle?: string;
+  searchQuery?: string;
+  onSearchChange?: (val: string) => void;
 }
 
-export function TopBar({ title, subtitle }: TopBarProps) {
+export function TopBar({ title, subtitle, searchQuery, onSearchChange }: TopBarProps) {
   const [searchFocused, setSearchFocused] = useState(false);
 
   return (
@@ -56,6 +58,8 @@ export function TopBar({ title, subtitle }: TopBarProps) {
           <input
             type="text"
             placeholder="Search leads, quotes..."
+            value={searchQuery || ""}
+            onChange={(e) => onSearchChange?.(e.target.value)}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
             style={{
