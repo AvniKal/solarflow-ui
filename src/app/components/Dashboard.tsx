@@ -1,8 +1,12 @@
+import { useState } from "react";
+
 import { Users, FileText, Zap, Clock, TrendingUp, TrendingDown, Eye, Edit2, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from "recharts";
+
+import { LeadDetails } from "./LeadDetails";
 
 const kpiCards = [
   {
@@ -132,7 +136,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
-  return (
+  
+  
+  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [leads, setLeads] = useState(recentLeads);return (
     <div style={{ padding: 32, maxWidth: 1280, margin: "0 auto" }}>
       {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 28 }}>
@@ -332,11 +339,11 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
             </tr>
           </thead>
           <tbody>
-            {recentLeads.map((lead, i) => {
-              const s = statusStyles[lead.status];
+            {leads.map((leads, i) => {
+              const s = statusStyles[leads.status];
               return (
                 <tr
-                  key={lead.id}
+                  key={leads.id}
                   style={{
                     background: i % 2 === 0 ? "#fff" : "#FAFBFC",
                     transition: "background 0.1s",
@@ -350,13 +357,13 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
                   }}
                 >
                   <td style={{ padding: "13px 20px", fontSize: 13, fontWeight: 600, color: "#0F172A" }}>
-                    {lead.name}
+                    {leads.name}
                   </td>
-                  <td style={{ padding: "13px 20px", fontSize: 13, color: "#64748B" }}>{lead.location}</td>
+                  <td style={{ padding: "13px 20px", fontSize: 13, color: "#64748B" }}>{leads.location}</td>
                   <td style={{ padding: "13px 20px", fontSize: 13, fontWeight: 600, color: "#0F172A" }}>
-                    {lead.capacity}
+                    {leads.capacity}
                   </td>
-                  <td style={{ padding: "13px 20px", fontSize: 13, color: "#0F172A" }}>{lead.budget}</td>
+                  <td style={{ padding: "13px 20px", fontSize: 13, color: "#0F172A" }}>{leads.budget}</td>
                   <td style={{ padding: "13px 20px" }}>
                     <span
                       style={{
@@ -368,14 +375,15 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
                         fontWeight: 600,
                       }}
                     >
-                      {lead.status}
+                      {leads.status}
                     </span>
                   </td>
-                  <td style={{ padding: "13px 20px", fontSize: 12, color: "#94A3B8" }}>{lead.updated}</td>
+                  <td style={{ padding: "13px 20px", fontSize: 12, color: "#94A3B8" }}>{leads.updated}</td>
                   <td style={{ padding: "13px 20px" }}>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
-                        style={{
+                        onClick={() => setSelectedLead(leads)}
+                          style={{
                           background: "#F1F5F9",
                           border: "none",
                           borderRadius: 6,
@@ -474,7 +482,26 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
             </button>
           </div>
         </div>
-      </div>
+            </div>
+
+      {selectedLead && (
+  <LeadDetails
+    lead={selectedLead}
+    onClose={() => setSelectedLead(null)}
+  onSave={(updatedLead) => {
+  setLeads(
+    leads.map((lead) =>
+      lead.id === updatedLead.id ? updatedLead : lead
+    )
+  );
+
+  setSelectedLead(null);
+}}
+    
+  />
+)}
+
     </div>
   );
 }
+  
