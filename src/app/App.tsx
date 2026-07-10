@@ -7,6 +7,8 @@ import { QuotationView } from "./components/QuotationView";
 import { Pipeline } from "./components/Pipeline";
 import { InstallationSchedule } from "./components/InstallationSchedule";
 import { ServiceSupport } from "./components/ServiceSupport";
+import { LeadsPage } from "./components/LeadsPage";
+import { LeadDetailPage } from "./components/LeadDetailPage";
 
 const screenMeta: Record<string, { title: string; subtitle?: string }> = {
   dashboard: { title: "Dashboard", subtitle: "Welcome back, Rahul 👋" },
@@ -31,17 +33,38 @@ function PlaceholderScreen({ title }: { title: string }) {
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState("dashboard");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const meta = screenMeta[activeScreen] || { title: activeScreen };
+  const [baseScreen, param1, param2] = activeScreen.split("/");
+  let meta = screenMeta[baseScreen] || { title: baseScreen };
+
+  if (baseScreen === "leads") {
+    if (param1 === "new") {
+      meta = { title: "Leads", subtitle: "Capture new lead" };
+    } else if (param1 && param2 === "edit") {
+      meta = { title: "Leads", subtitle: "Edit lead details" };
+    } else if (param1) {
+      meta = { title: "Leads", subtitle: "Lead profile" };
+    }
+  } else if (baseScreen === "quotations" && param1) {
+    meta = { title: "Quotation", subtitle: "Dynamic system quotation" };
+  }
 
   const renderScreen = () => {
-    switch (activeScreen) {
+    switch (baseScreen) {
       case "dashboard":
         return <Dashboard onNavigate={setActiveScreen} />;
       case "leads":
-        return <NewLeadForm onNavigate={setActiveScreen} />;
+        if (param1 === "new") {
+          return <NewLeadForm onNavigate={setActiveScreen} />;
+        } else if (param1 && param2 === "edit") {
+          return <NewLeadForm leadId={param1} onNavigate={setActiveScreen} />;
+        } else if (param1) {
+          return <LeadDetailPage leadId={param1} onNavigate={setActiveScreen} />;
+        }
+        return <LeadsPage onNavigate={setActiveScreen} searchQuery={searchQuery} />;
       case "quotations":
-        return <QuotationView />;
+        return <QuotationView leadId={param1} onNavigate={setActiveScreen} />;
       case "pipeline":
         return <Pipeline />;
       case "installations":
@@ -63,7 +86,7 @@ export default function App() {
         background: "#F8FAFC",
       }}
     >
-      <Sidebar activeScreen={activeScreen} onNavigate={setActiveScreen} />
+      <Sidebar activeScreen={baseScreen} onNavigate={setActiveScreen} />
 
       <div
         style={{
@@ -74,7 +97,12 @@ export default function App() {
           minWidth: 0,
         }}
       >
-        <TopBar title={meta.title} subtitle={meta.subtitle} />
+        <TopBar
+          title={meta.title}
+          subtitle={meta.subtitle}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
         <main
           style={{
             flex: 1,

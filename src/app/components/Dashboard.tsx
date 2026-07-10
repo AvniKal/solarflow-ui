@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { db } from "../../lib/db";
 
 import { Users, FileText, Zap, Clock, TrendingUp, TrendingDown, Eye, Edit2, ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -120,6 +121,29 @@ const statusStyles: Record<string, { bg: string; color: string }> = {
   Lost: { bg: "#FEF2F2", color: "#991B1B" },
 };
 
+function formatBudget(num: number | null) {
+  if (!num) return "—";
+  return "₹" + (num / 100000).toFixed(1) + "L";
+}
+
+function formatRelativeTime(dateStr: string) {
+  try {
+    const date = new Date(dateStr);
+    const diffMs = new Date().getTime() - date.getTime();
+    if (isNaN(diffMs)) return "—";
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} mins ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hrs ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return "Yesterday";
+    return `${diffDays} days ago`;
+  } catch (e) {
+    return "—";
+  }
+}
+
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -136,10 +160,30 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
-  
-  
+
   const [selectedLead, setSelectedLead] = useState<any>(null);
-  const [leads, setLeads] = useState(recentLeads);return (
+
+  const [recentLeads, setRecentLeads] = useState<any[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(true);
+
+  useEffect(() => {
+    const fetchRecentLeads = async () => {
+      try {
+        setLoadingLeads(true);
+        const data = await db.getRecentLeads(5);
+        setRecentLeads(data || []);
+      } catch (err) {
+        console.error("Error loading recent leads:", err);
+      } finally {
+        setLoadingLeads(false);
+      }
+    };
+
+    fetchRecentLeads();
+  }, []);
+
+  return (
+
     <div style={{ padding: 32, maxWidth: 1280, margin: "0 auto" }}>
       {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 28 }}>
@@ -339,84 +383,111 @@ export function Dashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
             </tr>
           </thead>
           <tbody>
-            {leads.map((leads, i) => {
-              const s = statusStyles[leads.status];
-              return (
-                <tr
-                  key={leads.id}
-                  style={{
-                    background: i % 2 === 0 ? "#fff" : "#FAFBFC",
-                    transition: "background 0.1s",
-                    cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLTableRowElement).style.background = "#FEF3C7";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLTableRowElement).style.background = i % 2 === 0 ? "#fff" : "#FAFBFC";
-                  }}
-                >
-                  <td style={{ padding: "13px 20px", fontSize: 13, fontWeight: 600, color: "#0F172A" }}>
-                    {leads.name}
-                  </td>
-                  <td style={{ padding: "13px 20px", fontSize: 13, color: "#64748B" }}>{leads.location}</td>
-                  <td style={{ padding: "13px 20px", fontSize: 13, fontWeight: 600, color: "#0F172A" }}>
-                    {leads.capacity}
-                  </td>
-                  <td style={{ padding: "13px 20px", fontSize: 13, color: "#0F172A" }}>{leads.budget}</td>
-                  <td style={{ padding: "13px 20px" }}>
-                    <span
-                      style={{
-                        background: s.bg,
-                        color: s.color,
-                        borderRadius: 20,
-                        padding: "3px 10px",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {leads.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: "13px 20px", fontSize: 12, color: "#94A3B8" }}>{leads.updated}</td>
-                  <td style={{ padding: "13px 20px" }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        onClick={() => setSelectedLead(leads)}
-                          style={{
-                          background: "#F1F5F9",
-                          border: "none",
-                          borderRadius: 6,
-                          width: 30,
-                          height: 30,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <Eye size={14} color="#64748B" strokeWidth={1.5} />
-                      </button>
-                      <button
+
+                 
+                  
+            {loadingLeads ? (
+              <tr>
+                <td colSpan={7} style={{ padding: "40px 0", textAlign: "center", color: "#64748B", fontSize: 13 }}>
+                  Loading recent leads...
+                </td>
+              </tr>
+            ) : recentLeads.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ padding: "40px 0", textAlign: "center", color: "#64748B", fontSize: 13 }}>
+                  No recent leads found.
+                </td>
+              </tr>
+            ) : (
+              recentLeads.map((lead, i) => {
+                const s = statusStyles[lead.status] || { bg: "#F1F5F9", color: "#475569" };
+                return (
+                  <tr
+                    key={lead.id}
+                    style={{
+                      background: i % 2 === 0 ? "#fff" : "#FAFBFC",
+                      transition: "background 0.1s",
+                      cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLTableRowElement).style.background = "#FEF3C7";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLTableRowElement).style.background = i % 2 === 0 ? "#fff" : "#FAFBFC";
+                    }}
+                  >
+                    <td style={{ padding: "13px 20px", fontSize: 13, fontWeight: 600, color: "#0F172A" }}>
+                      {lead.customer_name}
+                    </td>
+                    <td style={{ padding: "13px 20px", fontSize: 13, color: "#64748B" }}>{lead.location || "—"}</td>
+                    <td style={{ padding: "13px 20px", fontSize: 13, fontWeight: 600, color: "#0F172A" }}>
+                      {lead.capacity} kW
+                    </td>
+                    <td style={{ padding: "13px 20px", fontSize: 13, color: "#0F172A" }}>{formatBudget(lead.budget)}</td>
+                    <td style={{ padding: "13px 20px" }}>
+                      <span
                         style={{
-                          background: "#F1F5F9",
-                          border: "none",
-                          borderRadius: 6,
-                          width: 30,
-                          height: 30,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          cursor: "pointer",
+                          background: s.bg,
+                          color: s.color,
+                          borderRadius: 20,
+                          padding: "3px 10px",
+                          fontSize: 12,
+                          fontWeight: 600,
+
                         }}
                       >
-                        <Edit2 size={14} color="#64748B" strokeWidth={1.5} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                        {lead.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: "13px 20px", fontSize: 12, color: "#94A3B8" }}>{formatRelativeTime(lead.created_at)}</td>
+                    <td style={{ padding: "13px 20px" }}>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigate(`leads/${lead.id}`);
+                          }}
+                          title="View Detail"
+                          style={{
+                            background: "#F1F5F9",
+                            border: "none",
+                            borderRadius: 6,
+                            width: 30,
+                            height: 30,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Eye size={14} color="#64748B" strokeWidth={1.5} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigate(`leads/${lead.id}/edit`);
+                          }}
+                          title="Edit Lead"
+                          style={{
+                            background: "#F1F5F9",
+                            border: "none",
+                            borderRadius: 6,
+                            width: 30,
+                            height: 30,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Edit2 size={14} color="#64748B" strokeWidth={1.5} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
         {/* Pagination */}
